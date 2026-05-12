@@ -9,3 +9,4 @@ export { default as Polyline } from "./polyline";
 export * from "./types";
 export { AMapSdk };
 import * as AMapSdk from "./sdk";
+export { calculateLineDistance } from "./utils";
