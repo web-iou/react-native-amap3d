@@ -3,7 +3,7 @@
 
 @implementation MapUtils
 
-RCT_EXPORT_MODULE();
+RCT_EXPORT_MODULE(AMapUtils);
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(calculateLineDistance:(NSDictionary *)startPoint
                   endPoint:(NSDictionary *)endPoint)
