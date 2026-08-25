@@ -31,6 +31,8 @@ https://qiuxiang.github.io/react-native-amap3d/api/
 
 ## 安装
 
+当前版本仅支持 React Native 0.76 及以上的新架构（Fabric），请确保应用已启用 New Architecture。
+
 ```bash
 npm i react-native-amap3d
 ```

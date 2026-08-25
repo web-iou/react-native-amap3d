@@ -1,26 +1,10 @@
-@objc(AMapMarkerManager)
-class AMapMarkerManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
 
-  override func view() -> UIView {
-    let view = Marker()
-    view.imageLoader = bridge.module(forName: "ImageLoader") as? RCTImageLoader
-    return view
-  }
-
-  @objc func update(_ reactTag: NSNumber) {
-    getView(reactTag: reactTag) { view in view.update() }
-  }
-
-  func getView(reactTag: NSNumber, callback: @escaping (Marker) -> Void) {
-    bridge.uiManager.addUIBlock { _, viewRegistry in
-      callback(viewRegistry![reactTag] as! Marker)
-    }
-  }
-}
-
+@objc(AMapNativeMarker)
 class Marker: UIView {
-  var imageLoader: RCTImageLoader?
   var view: MAAnnotationView?
   var annotation = MAPointAnnotation()
   var icon: UIImage?
@@ -28,19 +12,21 @@ class Marker: UIView {
   var centerOffset: CGPoint?
 
   @objc var draggable = false { didSet { view?.isDraggable = draggable } }
-  @objc var zIndex = 1 { didSet { view?.zIndex = zIndex } }
+  /// Consumed from View style `zIndex` via Fabric BaseViewProps (KVC), not a custom prop.
+  @objc var zIndex = 0 { didSet { view?.zIndex = zIndex } }
 
-  @objc var onPress: RCTDirectEventBlock = { _ in }
-  @objc var onDragStart: RCTDirectEventBlock = { _ in }
-  @objc var onDrag: RCTDirectEventBlock = { _ in }
-  @objc var onDragEnd: RCTDirectEventBlock = { _ in }
+  @objc dynamic var onPress: AMapEventCallback = { _ in }
+  @objc dynamic var onDragStart: AMapEventCallback = { _ in }
+  @objc dynamic var onDrag: AMapEventCallback = { _ in }
+  @objc dynamic var onDragEnd: AMapEventCallback = { _ in }
 
   @objc func setIcon(_ icon: NSDictionary?) {
-    imageLoader?.loadImage(icon) { image in
+    let apply: (UIImage) -> Void = { image in
       self.icon = image
       self.view?.image = image
       self.updateCenterOffset()
     }
+    AMapImageLoader.load(icon, completion: apply)
   }
 
   @objc func setLatLng(_ coordinate: CLLocationCoordinate2D) {
@@ -53,6 +39,7 @@ class Marker: UIView {
   }
 
   override func didAddSubview(_ subview: UIView) {
+    super.didAddSubview(subview)
     subview.layer.opacity = 0
     iconView = subview
   }

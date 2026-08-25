@@ -63,7 +63,7 @@ interface Props {
   /**
    * 渲染聚合点
    */
-  renderCluster?: (params: ClusterParams) => React.ComponentType<any>;
+  renderCluster?: (params: ClusterParams) => React.ReactNode;
 
   /**
    * 聚合点点击事件

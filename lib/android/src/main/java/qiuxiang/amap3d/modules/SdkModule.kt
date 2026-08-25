@@ -4,17 +4,11 @@ import com.amap.api.location.AMapLocationClient
 import com.amap.api.maps.MapsInitializer
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
+import com.facebook.fbreact.specs.NativeAMapSdkSpec
 
 @Suppress("unused")
-class SdkModule(val context: ReactApplicationContext) : ReactContextBaseJavaModule() {
-  override fun getName(): String {
-    return "AMapSdk"
-  }
-
-  @ReactMethod
-  fun initSDK(apiKey: String?) {
+class SdkModule(private val context: ReactApplicationContext) : NativeAMapSdkSpec(context) {
+  override fun initSDK(apiKey: String?) {
     apiKey?.let {
       MapsInitializer.setApiKey(it)
       MapsInitializer.updatePrivacyAgree(context, true)
@@ -24,8 +18,7 @@ class SdkModule(val context: ReactApplicationContext) : ReactContextBaseJavaModu
     }
   }
 
-  @ReactMethod
-  fun getVersion(promise: Promise) {
+  override fun getVersion(promise: Promise) {
     promise.resolve(MapsInitializer.getVersion())
   }
 }

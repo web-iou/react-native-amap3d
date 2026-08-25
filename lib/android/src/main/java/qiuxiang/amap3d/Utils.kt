@@ -13,7 +13,10 @@ import com.facebook.imagepipeline.request.ImageRequestBuilder
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
+import com.facebook.react.uimanager.UIManagerHelper
+import com.facebook.react.uimanager.events.Event
 import com.facebook.react.views.imagehelper.ImageSource
 
 fun Float.toPx(): Int {
@@ -70,7 +73,7 @@ fun Location.toJson(): WritableMap {
     putMap("coords", Arguments.createMap().apply {
       putDouble("latitude", latitude)
       putDouble("longitude", longitude)
-      putDouble("latitude", latitude)
+      putDouble("altitude", altitude)
       putDouble("accuracy", accuracy.toDouble())
       putDouble("heading", bearing.toDouble())
       putDouble("speed", speed.toDouble())
@@ -92,6 +95,32 @@ fun ReadableMap.getFloat(key: String): Float? {
 
 fun getEventTypeConstants(vararg list: String): Map<String, Any> {
   return list.associateWith { mapOf("phasedRegistrationNames" to mapOf("bubbled" to it)) }
+}
+
+private class AMapEvent(
+  surfaceId: Int,
+  viewTag: Int,
+  private val name: String,
+  private val payload: WritableMap,
+) : Event<AMapEvent>(surfaceId, viewTag) {
+  override fun getEventName() = name
+  override fun getEventData() = payload
+}
+
+fun dispatchEvent(
+  reactContext: ReactContext,
+  viewTag: Int,
+  name: String,
+  payload: WritableMap = Arguments.createMap(),
+) {
+  val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
+  UIManagerHelper.getEventDispatcherForReactTag(reactContext, viewTag)
+    ?.dispatchEvent(AMapEvent(surfaceId, viewTag, name, payload))
+}
+
+fun View.dispatchEvent(name: String, payload: WritableMap = Arguments.createMap()) {
+  val reactContext = context as? ReactContext ?: return
+  dispatchEvent(reactContext, id, name, payload)
 }
 
 fun View.fetchImage(source: ReadableMap, callback: (BitmapDescriptor) -> Unit) {

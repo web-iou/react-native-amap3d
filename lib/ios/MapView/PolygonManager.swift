@@ -1,9 +1,9 @@
-@objc(AMapPolygonManager)
-class AMapPolygonManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
-  override func view() -> UIView { Polygon() }
-}
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
 
+@objc(AMapNativePolygon)
 class Polygon: UIView, Overlay {
   var overlay = MAPolygon()
   var renderer: MAPolygonRenderer?
@@ -17,7 +17,10 @@ class Polygon: UIView, Overlay {
     overlay.setPolygonWithCoordinates(&coordinates, count: points.count)
   }
 
-  func getOverlay() -> MABaseOverlay { overlay }
+  /// Consumed from View style `zIndex` via Fabric BaseViewProps (KVC).
+  @objc var zIndex: Int = 0
+
+  func getOverlay() -> MABaseOverlay? { overlay }
   func getRenderer() -> MAOverlayRenderer {
     if renderer == nil {
       renderer = MAPolygonRenderer(polygon: overlay)

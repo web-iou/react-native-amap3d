@@ -1,4 +1,4 @@
-#import <React/RCTBridgeModule.h>
+#import <ReactCodegen/RNAmap3dSpec/RNAmap3dSpec.h>
 
-@interface MapUtils : NSObject <RCTBridgeModule>
+@interface MapUtils : NativeAMapUtilsSpecBase <NativeAMapUtilsSpec>
 @end

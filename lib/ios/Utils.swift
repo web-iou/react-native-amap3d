@@ -1,3 +1,8 @@
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
+
 extension NSDictionary {
   var coordinate: CLLocationCoordinate2D {
     CLLocationCoordinate2DMake(self["latitude"] as! Double, self["longitude"] as! Double)
@@ -9,23 +14,25 @@ extension NSDictionary {
 }
 
 extension CLLocationCoordinate2D {
-  var json: [String: Double] {
+  var json: [String: Any] {
     ["latitude": latitude, "longitude": longitude]
   }
 }
 
 extension MAUserLocation {
   var json: [String: Any] {
-    [
-      "coords": [
-        "latitude": coordinate.latitude,
-        "longitude": coordinate.longitude,
-        "altitude": location?.altitude ?? 0,
-        "heading": heading?.trueHeading,
-        "accuracy": location?.horizontalAccuracy ?? 0,
-        "speed": location?.speed ?? 0,
-      ],
-      "timestamp": NSDate().timeIntervalSince1970 * 1000,
+    // 拆开写，避免 Swift 对嵌套字典做类型推断超时
+    let coords: [String: Any] = [
+      "latitude": coordinate.latitude,
+      "longitude": coordinate.longitude,
+      "altitude": location?.altitude ?? 0,
+      "heading": heading?.trueHeading ?? 0,
+      "accuracy": location?.horizontalAccuracy ?? 0,
+      "speed": location?.speed ?? 0,
+    ]
+    return [
+      "coords": coords,
+      "timestamp": Date().timeIntervalSince1970 * 1000,
     ]
   }
 }
@@ -71,34 +78,24 @@ extension Double {
   }
 }
 
-extension RCTConvert {
-  @objc static func MAMapType(_ json: Any) -> MAMapType {
-    MAMapKit.MAMapType(rawValue: json as! NSInteger)!
-  }
-}
+enum AMapImageLoader {
+  static func load(_ source: NSDictionary?, completion: @escaping (UIImage) -> Void) {
+    guard
+      let uri = source?["uri"] as? String,
+      let url = URL(string: uri)
+    else { return }
 
-extension RCTImageLoader {
-  func loadImage(_ icon: NSDictionary?, callback: @escaping (UIImage) -> Void) {
-    if icon == nil {
-      return
+    let finish: (Data?) -> Void = { data in
+      guard let data, let image = UIImage(data: data) else { return }
+      DispatchQueue.main.async { completion(image) }
     }
-    let width = icon?["width"] as? Double ?? 0
-    let height = icon?["height"] as? Double ?? 0
-    loadImage(
-      with: RCTConvert.nsurlRequest(icon),
-      size: CGSize(width: width, height: height),
-      scale: RCTScreenScale(),
-      clipped: false,
-      resizeMode: RCTResizeMode.cover,
-      progressBlock: { _, _ in },
-      partialLoad: { _ in },
-      completionBlock: { _, image in
-        if image != nil {
-          DispatchQueue.main.async {
-            callback(image!)
-          }
-        }
+
+    if url.isFileURL {
+      DispatchQueue.global(qos: .userInitiated).async {
+        finish(try? Data(contentsOf: url))
       }
-    )
+    } else {
+      URLSession.shared.dataTask(with: url) { data, _, _ in finish(data) }.resume()
+    }
   }
 }

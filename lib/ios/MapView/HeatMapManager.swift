@@ -1,14 +1,14 @@
-@objc(AMapHeatMapManager)
-class AMapHeatMapManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
-  override func view() -> UIView { HeatMap() }
-}
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
 
+@objc(AMapNativeHeatMap)
 class HeatMap: UIView, Overlay {
   var overlay = MAHeatMapTileOverlay()
   var renderer: MATileOverlayRenderer?
 
-  func getOverlay() -> MABaseOverlay { overlay }
+  func getOverlay() -> MABaseOverlay? { overlay }
   func getRenderer() -> MAOverlayRenderer {
     if renderer == nil {
       renderer = MATileOverlayRenderer(tileOverlay: overlay)
@@ -25,5 +25,6 @@ class HeatMap: UIView, Overlay {
       item.intensity = 1
       return item
     }
+    renderer?.reloadData()
   }
 }

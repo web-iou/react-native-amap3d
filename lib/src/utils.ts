@@ -1,6 +1,6 @@
-import { NativeModules } from "react-native";
+import AMapUtils from "./specs/NativeAMapUtils";
 import { LatLng } from "./types";
-const { AMapUtils } = NativeModules;
+
 export function calculateLineDistance(startPoint: LatLng, endPoint: LatLng): number {
   return AMapUtils.calculateLineDistance(startPoint, endPoint);
 }

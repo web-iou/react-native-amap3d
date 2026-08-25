@@ -1,51 +1,48 @@
-@objc(AMapViewManager)
-class AMapViewManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
 
-  override func view() -> UIView {
-    let view = MapView()
-    view.delegate = view
-    return view
-  }
-
-  @objc func moveCamera(_ reactTag: NSNumber, position: NSDictionary, duration: Int) {
-    getView(reactTag: reactTag) { view in
-      view.moveCamera(position: position, duration: duration)
-    }
-  }
-
-  @objc func call(_ reactTag: NSNumber, callerId: Double, name: String, args: NSDictionary) {
-    getView(reactTag: reactTag) { view in
-      view.call(id: callerId, name: name, args: args)
-    }
-  }
-
-  func getView(reactTag: NSNumber, callback: @escaping (MapView) -> Void) {
-    bridge.uiManager.addUIBlock { _, viewRegistry in
-      callback(viewRegistry![reactTag] as! MapView)
-    }
-  }
-}
-
+@objc(AMapNativeMapView)
 class MapView: MAMapView, MAMapViewDelegate {
   var initialized = false
   var overlayMap: [MABaseOverlay: Overlay] = [:]
   var markerMap: [MAPointAnnotation: Marker] = [:]
 
-  @objc var onLoad: RCTBubblingEventBlock = { _ in }
-  @objc var onCameraMove: RCTBubblingEventBlock = { _ in }
-  @objc var onCameraIdle: RCTBubblingEventBlock = { _ in }
-  @objc var onPress: RCTBubblingEventBlock = { _ in }
-  @objc var onPressPoi: RCTBubblingEventBlock = { _ in }
-  @objc var onLongPress: RCTBubblingEventBlock = { _ in }
-  @objc var onLocation: RCTBubblingEventBlock = { _ in }
-  @objc var onCallback: RCTBubblingEventBlock = { _ in }
+  @objc dynamic var onLoad: AMapEventCallback = { _ in }
+  @objc dynamic var onCameraMove: AMapEventCallback = { _ in }
+  @objc dynamic var onCameraIdle: AMapEventCallback = { _ in }
+  @objc dynamic var onPress: AMapEventCallback = { _ in }
+  @objc dynamic var onPressPoi: AMapEventCallback = { _ in }
+  @objc dynamic var onLongPress: AMapEventCallback = { _ in }
+  @objc dynamic var onLocation: AMapEventCallback = { _ in }
+  @objc dynamic var onCallback: AMapEventCallback = { _ in }
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    delegate = self
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+    delegate = self
+  }
 
   @objc func setInitialCameraPosition(_ json: NSDictionary) {
     if !initialized {
       initialized = true
       moveCamera(position: json)
     }
+  }
+
+  /// Fabric 组件回收复用时重置，避免第二次进页仍用旧相机 / 旧定位态
+  @objc func resetForRecycle() {
+    initialized = false
+    showsUserLocation = false
+    removeAnnotations(annotations)
+    removeOverlays(overlays)
+    overlayMap.removeAll()
+    markerMap.removeAll()
   }
 
   func moveCamera(position: NSDictionary, duration: Int = 0) {
@@ -57,6 +54,12 @@ class MapView: MAMapView, MAMapViewDelegate {
     setMapStatus(status, animated: true, duration: Double(duration) / 1000)
   }
 
+  /// Fabric `AMapViewComponentView` 通过 objc_msgSend 调用
+  @objc(moveCameraWithPosition:duration:)
+  func moveCameraWithPosition(_ position: NSDictionary, duration: Int) {
+    moveCamera(position: position, duration: duration)
+  }
+
   func call(id: Double, name: String, args: NSDictionary) {
     switch name {
     case "getLatLng":
@@ -66,13 +69,20 @@ class MapView: MAMapView, MAMapViewDelegate {
     }
   }
 
+  @objc(callWithId:name:args:)
+  func callWithId(_ id: Double, name: String, args: NSDictionary) {
+    call(id: id, name: name, args: args)
+  }
+
   func callback(id: Double, data: [String: Any]) {
     onCallback(["id": id, "data": data])
   }
 
-  override func didAddSubview(_ subview: UIView) {
-    if let overlay = (subview as? Overlay)?.getOverlay() {
-      overlayMap[overlay] = subview as? Overlay
+  @objc func mountFabricSubview(_ subview: UIView) {
+    if let multiPoint = subview as? MultiPoint {
+      multiPoint.attach(to: self)
+    } else if let overlayView = subview as? Overlay, let overlay = overlayView.getOverlay() {
+      overlayMap[overlay] = overlayView
       add(overlay)
     }
     if let annotation = (subview as? Marker)?.annotation {
@@ -81,9 +91,10 @@ class MapView: MAMapView, MAMapViewDelegate {
     }
   }
 
-  override func removeReactSubview(_ subview: UIView!) {
-    super.removeReactSubview(subview)
-    if let overlay = (subview as? Overlay)?.getOverlay() {
+  @objc func unmountFabricSubview(_ subview: UIView) {
+    if let multiPoint = subview as? MultiPoint {
+      multiPoint.detach(from: self)
+    } else if let overlayView = subview as? Overlay, let overlay = overlayView.getOverlay() {
       overlayMap.removeValue(forKey: overlay)
       remove(overlay)
     }
@@ -155,5 +166,18 @@ class MapView: MAMapView, MAMapViewDelegate {
 
   func mapView(_: MAMapView!, didUpdate userLocation: MAUserLocation!, updatingLocation _: Bool) {
     onLocation(userLocation.json)
+  }
+
+  /// 定位权限未定时 AMap 会回调；必须主动 request，否则开启 showsUserLocation 可能异常
+  func mapViewRequireLocationAuth(_ locationManager: CLLocationManager!) {
+    if locationManager.responds(to: #selector(CLLocationManager.requestWhenInUseAuthorization)) {
+      locationManager.requestWhenInUseAuthorization()
+    }
+  }
+
+  func mapView(_: MAMapView!, didFailToLocateUserWithError error: Error!) {
+    #if DEBUG
+      print("[AMapNativeMapView] locate failed: \(String(describing: error))")
+    #endif
   }
 }

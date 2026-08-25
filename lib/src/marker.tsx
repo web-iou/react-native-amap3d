@@ -1,14 +1,14 @@
 import * as React from "react";
 import {
+  Image,
   ImageSourcePropType,
   NativeSyntheticEvent,
-  requireNativeComponent,
+  StyleProp,
   View,
   ViewStyle,
 } from "react-native";
-// @ts-ignore
-import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 import Component from "./component";
+import NativeMarker, { Commands } from "./specs/AMapMarkerNativeComponent";
 import { LatLng, Point } from "./types";
 
 export interface MarkerProps {
@@ -41,9 +41,11 @@ export interface MarkerProps {
   flat?: boolean;
 
   /**
-   * 层级
+   * 层级（写入 style.zIndex，由原生 View 样式通道下发）
    */
   zIndex?: number;
+
+  style?: StyleProp<ViewStyle>;
 
   /**
    * 覆盖物锚点比例
@@ -88,7 +90,7 @@ export interface MarkerProps {
 }
 
 export default class extends Component<MarkerProps> {
-  name = name;
+  ref: React.ElementRef<typeof NativeMarker> | null = null;
 
   /**
    * 触发自定义 view 更新
@@ -98,7 +100,11 @@ export default class extends Component<MarkerProps> {
    * icon 更新。
    */
   update = () => {
-    setTimeout(() => this.invoke("update"), 0);
+    setTimeout(() => {
+      if (this.mounted && this.ref) {
+        Commands.update(this.ref);
+      }
+    }, 0);
   };
 
   componentDidUpdate() {
@@ -108,21 +114,28 @@ export default class extends Component<MarkerProps> {
   }
 
   render() {
-    const props = { ...this.props };
-    Reflect.set(props, "latLng", props.position);
-    // @ts-ignore android 不能用 position 作为属性，会发生冲突，也是个蛋疼的问题
-    delete props.position;
-    if (props.children) {
-      props.children = (
+    const { position, icon, children, zIndex, style: propStyle, ...props } = this.props;
+    const nativeChildren = children
+      ? (
         <View style={style} onLayout={this.update}>
-          {props.children}
+          {children}
         </View>
-      );
-    }
-    return <NativeMarker {...props} icon={resolveAssetSource(props.icon)} />;
+      )
+      : undefined;
+    return (
+      <NativeMarker
+        {...props}
+        ref={(ref) => {
+          this.ref = ref;
+        }}
+        style={[propStyle, zIndex != null ? { zIndex } : null]}
+        latLng={position}
+        icon={icon ? Image.resolveAssetSource(icon) : undefined}
+      >
+        {nativeChildren}
+      </NativeMarker>
+    );
   }
 }
 
-const name = "AMapMarker";
 const style: ViewStyle = { position: "absolute", zIndex: -1 };
-const NativeMarker = requireNativeComponent<MarkerProps>(name);

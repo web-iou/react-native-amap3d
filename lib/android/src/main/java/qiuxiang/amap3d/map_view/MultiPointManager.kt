@@ -4,11 +4,17 @@ import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.facebook.react.viewmanagers.AMapMultiPointManagerDelegate
+import com.facebook.react.viewmanagers.AMapMultiPointManagerInterface
 import qiuxiang.amap3d.getEventTypeConstants
 
 @Suppress("unused")
-internal class MultiPointManager : SimpleViewManager<MultiPoint>() {
+internal class MultiPointManager : SimpleViewManager<MultiPoint>(), AMapMultiPointManagerInterface<MultiPoint> {
+  private val delegate = AMapMultiPointManagerDelegate<MultiPoint, MultiPointManager>(this)
+
+  override fun getDelegate(): ViewManagerDelegate<MultiPoint> = delegate
   override fun getName(): String {
     return "AMapMultiPoint"
   }
@@ -22,12 +28,12 @@ internal class MultiPointManager : SimpleViewManager<MultiPoint>() {
   }
 
   @ReactProp(name = "items")
-  fun setPoints(multiPoint: MultiPoint, items: ReadableArray) {
-    multiPoint.setItems(items)
+  override fun setItems(multiPoint: MultiPoint, items: ReadableArray?) {
+    items?.let(multiPoint::setItems)
   }
 
   @ReactProp(name = "icon")
-  fun setIcon(multiPoint: MultiPoint, icon: ReadableMap?) {
+  override fun setIcon(multiPoint: MultiPoint, icon: ReadableMap?) {
     icon?.let { multiPoint.setIcon(it) }
   }
 }

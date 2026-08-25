@@ -9,12 +9,22 @@ import com.amap.api.maps.model.TileOverlayOptions
 import com.facebook.react.views.view.ReactViewGroup
 
 class HeatMap(context: Context) : ReactViewGroup(context), Overlay {
+  private var map: AMap? = null
   private var overlay: TileOverlay? = null
-  var data: List<LatLng> = emptyList()
-  var opacity: Double = 0.6
-  var radius: Int = 12
+  private var data: List<LatLng> = emptyList()
+  private var opacity: Double = 0.6
+  private var radius: Int = 12
 
   override fun add(map: AMap) {
+    this.map = map
+    refresh()
+  }
+
+  private fun refresh() {
+    val map = map ?: return
+    overlay?.remove()
+    overlay = null
+    if (data.isEmpty()) return
     overlay = map.addTileOverlay(
       TileOverlayOptions().tileProvider(
         HeatmapTileProvider.Builder()
@@ -28,5 +38,22 @@ class HeatMap(context: Context) : ReactViewGroup(context), Overlay {
 
   override fun remove() {
     overlay?.remove()
+    overlay = null
+    map = null
+  }
+
+  fun setData(value: List<LatLng>) {
+    data = value
+    refresh()
+  }
+
+  fun setOpacity(value: Double) {
+    opacity = value
+    refresh()
+  }
+
+  fun setRadius(value: Int) {
+    radius = value
+    refresh()
   }
 }

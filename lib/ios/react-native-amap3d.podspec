@@ -10,11 +10,17 @@ Pod::Spec.new do |s|
   s.license      = package["license"]
   s.authors      = package["author"]
 
-  s.platforms    = { :ios => "10.0" }
+  s.platforms    = { :ios => "15.1" }
   s.source       = { :git => "https://github.com/qiuxiang/react-native-amap3d.git", :tag => "#{s.version}" }
 
   s.source_files = "**/*.{h,m,mm,swift}"
+  s.private_header_files = "**/*.h"
+  s.swift_version = "5.0"
+  s.pod_target_xcconfig = {
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+    "GCC_PREPROCESSOR_DEFINITIONS" => "$(inherited) RCT_NEW_ARCH_ENABLED=1"
+  }
 
-  s.dependency "React-Core"
+  install_modules_dependencies(s)
   s.dependency 'AMap3DMap'
 end

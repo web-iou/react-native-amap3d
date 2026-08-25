@@ -1,5 +1,6 @@
 import * as React from "react";
-import { ColorValue, Platform, processColor, requireNativeComponent } from "react-native";
+import { ColorValue, Platform, processColor, StyleProp, ViewStyle } from "react-native";
+import NativePolyline from "./specs/AMapPolylineNativeComponent";
 import { LatLng } from "./types";
 
 export interface PolylineProps {
@@ -19,7 +20,7 @@ export interface PolylineProps {
   color?: ColorValue;
 
   /**
-   * 层级
+   * 层级（写入 style.zIndex，由原生 View 样式通道下发）
    */
   zIndex?: number;
 
@@ -47,19 +48,28 @@ export interface PolylineProps {
    * 点击事件
    */
   onPress?: () => void;
+
+  style?: StyleProp<ViewStyle>;
 }
 
 export default class extends React.PureComponent<PolylineProps> {
   static defaultProps = { colors: [] };
 
   render() {
-    const props = {
-      ...this.props,
-      ...Platform.select({ android: { colors: this.props.colors.map(processColor) } }),
-    };
-    // @ts-ignore
-    return <NativePolyline {...props} />;
+    const { dotted, colors, zIndex, style, ...rest } = this.props;
+    const nativeColors =
+      Platform.OS === "android"
+        ? colors
+            .map(processColor)
+            .filter((color): color is Exclude<typeof color, null | undefined> => color != null)
+        : colors;
+    return (
+      <NativePolyline
+        {...rest}
+        style={[style, zIndex != null ? { zIndex } : null]}
+        colors={nativeColors as ColorValue[]}
+        {...(Platform.OS === "android" ? { dashed: dotted } : { dotted })}
+      />
+    );
   }
 }
-
-const NativePolyline = requireNativeComponent<PolylineProps>("AMapPolyline");

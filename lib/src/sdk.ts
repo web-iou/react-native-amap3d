@@ -1,9 +1,7 @@
-import { NativeModules } from "react-native";
-
-const { AMapSdk } = NativeModules;
+import AMapSdk from "./specs/NativeAMapSdk";
 
 export function init(apiKey?: string) {
-  AMapSdk.initSDK(apiKey);
+  AMapSdk.initSDK(apiKey ?? null);
 }
 
 export function getVersion(): Promise<string> {

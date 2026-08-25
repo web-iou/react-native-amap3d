@@ -6,12 +6,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: bruceadams/get-release@v1.3.2
         id: release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           registry-url: "https://registry.npmjs.org"
       - run: npm version ${{ steps.release.outputs.tag_name }} --no-git-tag-version
@@ -21,20 +21,24 @@ jobs:
   build-example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - run: npm pack
-      - run: npx react-native init example
+      - run: npx @react-native-community/cli@15.1.3 init example --version 0.76.9 --skip-install
       - run: cp index.js example/
       - run: cp -r example-app example/
       - run: npm i ../react-native-amap3d-0.0.0.tgz
         working-directory: example
       - run: npm i @react-native-picker/picker @react-navigation/native @react-navigation/native-stack react-native-safe-area-context react-native-screens
         working-directory: example
-      - run: sed -i.backup -r 's/(enableSeparateBuildPerCPUArchitecture = )false/\1true/' build.gradle
-        working-directory: example/android/app
-      - run: ./gradlew assembleRelease
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: ./gradlew :app:assembleRelease -PnewArchEnabled=true --stacktrace
         working-directory: example/android
       - uses: svenstaro/upload-release-action@v2
         with:
-          file: example/android/app/build/outputs/apk/release/app-*-release.apk
-          file_glob: true
+          file: example/android/app/build/outputs/apk/release/app-release.apk

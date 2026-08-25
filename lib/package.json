@@ -1,0 +1,13 @@
+{
+  "name": "react-native-amap3d",
+  "version": "0.0.0",
+  "description": "Shim for RN Gradle codegen: findPackageJsonFile looks at ../package.json from lib/android",
+  "codegenConfig": {
+    "name": "RNAmap3dSpec",
+    "type": "all",
+    "jsSrcsDir": "src/specs",
+    "android": {
+      "javaPackageName": "com.facebook.fbreact.specs"
+    }
+  }
+}

@@ -4,16 +4,22 @@ import android.view.View
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.facebook.react.viewmanagers.AMapMarkerManagerDelegate
+import com.facebook.react.viewmanagers.AMapMarkerManagerInterface
 import qiuxiang.amap3d.getEventTypeConstants
 import qiuxiang.amap3d.toLatLng
 
 @Suppress("unused")
-internal class MarkerManager : ViewGroupManager<Marker>() {
+internal class MarkerManager : ViewGroupManager<Marker>(), AMapMarkerManagerInterface<Marker> {
+  private val delegate = AMapMarkerManagerDelegate<Marker, MarkerManager>(this)
   override fun getName(): String {
     return "AMapMarker"
   }
+
+  override fun getDelegate(): ViewManagerDelegate<Marker> = delegate
 
   override fun createViewInstance(reactContext: ThemedReactContext): Marker {
     return Marker(reactContext)
@@ -41,13 +47,22 @@ internal class MarkerManager : ViewGroupManager<Marker>() {
     }
   }
 
+  override fun receiveCommand(marker: Marker, commandId: String, args: ReadableArray?) {
+    if (commandId == "update") marker.updateIcon()
+  }
+
+  override fun removeViewAt(parent: Marker, index: Int) {
+    super.removeViewAt(parent, index)
+    parent.updateIcon()
+  }
+
   @ReactProp(name = "latLng")
-  fun setLatLng(view: Marker, position: ReadableMap) {
-    view.position = position.toLatLng()
+  override fun setLatLng(view: Marker, position: ReadableMap?) {
+    view.position = position?.toLatLng()
   }
 
   @ReactProp(name = "flat")
-  fun setFlat(marker: Marker, flat: Boolean) {
+  override fun setFlat(marker: Marker, flat: Boolean) {
     marker.flat = flat
   }
 
@@ -56,23 +71,34 @@ internal class MarkerManager : ViewGroupManager<Marker>() {
     marker.opacity = opacity
   }
 
+  override fun setOpacity(marker: Marker, opacity: Double) {
+    marker.opacity = opacity.toFloat()
+  }
+
   @ReactProp(name = "draggable")
-  fun setDraggable(marker: Marker, draggable: Boolean) {
+  override fun setDraggable(marker: Marker, draggable: Boolean) {
     marker.draggable = draggable
   }
 
-  @ReactProp(name = "zIndex")
-  fun setIndex(marker: Marker, zIndex: Float) {
+  override fun setZIndex(marker: Marker, zIndex: Float) {
+    super.setZIndex(marker, zIndex)
     marker.zIndex = zIndex
   }
 
   @ReactProp(name = "anchor")
-  fun setAnchor(view: Marker, anchor: ReadableMap) {
-    view.setAnchor(anchor.getDouble("x"), anchor.getDouble("y"))
+  override fun setAnchor(view: Marker, anchor: ReadableMap?) {
+    anchor?.let { view.setAnchor(it.getDouble("x"), it.getDouble("y")) }
   }
 
   @ReactProp(name = "icon")
-  fun setIcon(view: Marker, icon: ReadableMap?) {
+  override fun setIcon(view: Marker, icon: ReadableMap?) {
     icon?.let { view.setIcon(it) }
+  }
+
+  @ReactProp(name = "centerOffset")
+  override fun setCenterOffset(view: Marker, centerOffset: ReadableMap?) = Unit
+
+  override fun update(view: Marker) {
+    view.updateIcon()
   }
 }

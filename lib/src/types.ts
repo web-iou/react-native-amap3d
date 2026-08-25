@@ -84,26 +84,18 @@ export interface CameraPosition {
 /**
  * 定位
  */
-export interface Location extends LatLng {
-  /**
-   * 精度
-   */
-  accuracy: number;
-
-  /**
-   * 朝向
-   */
-  heading: number;
-
-  /**
-   * 海拔
-   */
-  altitude: number;
-
-  /**
-   * 运动速度
-   */
-  speed: number;
+export interface Location {
+  timestamp: number;
+  coords: LatLng & {
+    /** 精度 */
+    accuracy: number;
+    /** 朝向 */
+    heading: number;
+    /** 海拔 */
+    altitude: number;
+    /** 运动速度 */
+    speed: number;
+  };
 }
 
 /**

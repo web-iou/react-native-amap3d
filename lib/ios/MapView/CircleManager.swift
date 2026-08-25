@@ -1,9 +1,8 @@
-@objc(AMapCircleManager)
-class AMapCircleManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
-  override func view() -> UIView { Circle() }
-}
+import CoreLocation
+import MAMapKit
+import UIKit
 
+@objc(AMapNativeCircle)
 class Circle: UIView, Overlay {
   var overlay = MACircle()
   var renderer: MACircleRenderer?
@@ -17,7 +16,10 @@ class Circle: UIView, Overlay {
     overlay.coordinate = center
   }
 
-  func getOverlay() -> MABaseOverlay { overlay }
+  /// Consumed from View style `zIndex` via Fabric BaseViewProps (KVC).
+  @objc var zIndex: Int = 0
+
+  func getOverlay() -> MABaseOverlay? { overlay }
   func getRenderer() -> MAOverlayRenderer {
     if renderer == nil {
       renderer = MACircleRenderer(circle: overlay)

@@ -1,12 +1,16 @@
 import * as React from "react";
-import {
-  NativeMethods,
-  NativeSyntheticEvent,
-  requireNativeComponent,
-  ViewProps,
-} from "react-native";
+import { NativeSyntheticEvent, ViewProps } from "react-native";
 import Component from "./component";
-import { CameraPosition, LatLng, LatLngBounds, MapPoi, MapType, Point } from "./types";
+import NativeMapView, { Commands } from "./specs/AMapViewNativeComponent";
+import {
+  CameraPosition,
+  LatLng,
+  LatLngBounds,
+  Location,
+  MapPoi,
+  MapType,
+  Point,
+} from "./types";
 
 export interface CameraEvent {
   cameraPosition: CameraPosition;
@@ -150,30 +154,34 @@ export interface MapViewProps extends ViewProps {
   /**
    * 地图定位更新事件
    */
-  onLocation?: (event: NativeSyntheticEvent<GeolocationPosition>) => void;
+  onLocation?: (event: NativeSyntheticEvent<Location>) => void;
 }
-
-const name = "AMapView";
-const NativeMapView = requireNativeComponent<MapViewProps>(name);
 
 export default class extends Component<MapViewProps> {
   static defaultProps = {
     style: { flex: 1 },
+    buildingsEnabled: true,
+    labelsEnabled: true,
     compassEnabled: true,
+    zoomControlsEnabled: true,
     scaleControlsEnabled: true,
+    zoomGesturesEnabled: true,
+    scrollGesturesEnabled: true,
+    rotateGesturesEnabled: true,
+    tiltGesturesEnabled: true,
     distanceFilter: 1,
   };
 
-  name = name;
-  ref?: (React.Component<MapViewProps> & NativeMethods) | null;
-  state = { loaded: false };
+  ref: React.ElementRef<typeof NativeMapView> | null = null;
   callbackMap: { [key: number]: (data: any) => void } = {};
 
   /**
    * 移动视角
    */
   moveCamera(cameraPosition: CameraPosition, duration = 0) {
-    this.invoke("moveCamera", [cameraPosition, duration]);
+    if (this.mounted && this.ref) {
+      Commands.moveCamera(this.ref, JSON.stringify(cameraPosition), duration);
+    }
   }
 
   /**
@@ -190,40 +198,38 @@ export default class extends Component<MapViewProps> {
 
   call(name: string, args: any): Promise<any> {
     const id = Math.random();
-    this.invoke("call", [id, name, args]);
+    if (!this.mounted || !this.ref) {
+      return Promise.reject(new Error("MapView is not mounted"));
+    }
+    Commands.call(this.ref, id, name, JSON.stringify(args ?? null));
     return new Promise((resolve) => (this.callbackMap[id] = resolve));
   }
 
-  componentDidMount() {
-    super.componentDidMount();
-    // 无论如何也要在 1 秒后 setLoaded(true) ，防止 onLoad 事件不触发的情况下显示不正常
-    // 目前只在 iOS 上低概率出现
-    setTimeout(() => this.setState({ loaded: true }), 1000);
+  componentWillUnmount() {
+    super.componentWillUnmount();
+    this.callbackMap = {};
   }
 
   render() {
-    let { style, onLoad } = this.props;
-    if (!this.state.loaded) {
-      style = [style, { width: 1, height: 1 }];
-    }
+    const { onLoad, onLocation, style, ...nativeProps } = this.props;
     return (
       <NativeMapView
-        {...this.props}
-        ref={(ref) => (this.ref = ref)}
+        {...nativeProps}
+        ref={(ref) => {
+          this.ref = ref;
+        }}
+        // Fabric 下勿再做 1x1→全屏二次 layout：每次进页都会白屏等 onLoad / 最多 1s
         style={style}
-        // @ts-ignore: 内部接口
         onCallback={this.callback}
         onPress={(event) => {
-          if (event.nativeEvent.latitude) {
+          if (typeof event.nativeEvent.latitude === "number") {
             this.props.onPress?.call(this, event);
           }
         }}
         onLoad={(event) => {
-          // android 地图部分控件不显示的问题在重新 layout 之后会恢复正常。
-          // 同时也能修复 ios 地图偶尔出现的 layout 异常
-          this.setState({ loaded: true });
-          onLoad?.call(this, event);
+          onLoad?.call(this, event as unknown as NativeSyntheticEvent<void>);
         }}
+        onLocation={(event) => onLocation?.call(this, event)}
       />
     );
   }

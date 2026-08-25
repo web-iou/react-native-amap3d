@@ -68,9 +68,17 @@ class Marker(context: Context) : ReactViewGroup(context), Overlay {
   }
 
   override fun addView(child: View, index: Int) {
+    if (childCount > 0) {
+      removeAllViews()
+    }
     super.addView(child, index)
     view = child
     view?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateIcon() }
+  }
+
+  override fun removeViewAt(index: Int) {
+    super.removeViewAt(index)
+    if (childCount == 0) view = null
   }
 
   fun setIcon(source: ReadableMap) {
@@ -98,5 +106,6 @@ class Marker(context: Context) : ReactViewGroup(context), Overlay {
 
   override fun remove() {
     marker?.destroy()
+    marker = null
   }
 }

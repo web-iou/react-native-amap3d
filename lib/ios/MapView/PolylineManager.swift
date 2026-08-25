@@ -1,9 +1,9 @@
-@objc(AMapPolylineManager)
-class AMapPolylineManager: RCTViewManager {
-  override class func requiresMainQueueSetup() -> Bool { false }
-  override func view() -> UIView { Polyline() }
-}
+import CoreLocation
+import Foundation
+import MAMapKit
+import UIKit
 
+@objc(AMapNativePolyline)
 class Polyline: UIView, Overlay {
   var overlay = MAMultiPolyline()
   var renderer: MAMultiColoredPolylineRenderer?
@@ -26,7 +26,10 @@ class Polyline: UIView, Overlay {
     renderer?.lineDashType = dotted ? kMALineDashTypeDot : kMALineDashTypeNone
   }
 
-  func getOverlay() -> MABaseOverlay { overlay }
+  /// Consumed from View style `zIndex` via Fabric BaseViewProps (KVC).
+  @objc var zIndex: Int = 0
+
+  func getOverlay() -> MABaseOverlay? { overlay }
   func getRenderer() -> MAOverlayRenderer {
     if renderer == nil {
       renderer = MAMultiColoredPolylineRenderer(multiPolyline: overlay)

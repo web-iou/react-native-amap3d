@@ -10,14 +10,8 @@ import {
   View,
 } from "react-native";
 import { AMapSdk } from "react-native-amap3d";
-import { Constructor } from "react-native/private/Utilities";
 import screens from "./screens";
 import { NavigationProps, ScreenName } from "./types";
-
-let Touchable: Constructor<any> = TouchableOpacity;
-if (Platform.OS === "android") {
-  Touchable = TouchableNativeFeedback;
-}
 
 export default () => {
   const navigation = useNavigation<NavigationProps>();
@@ -44,12 +38,16 @@ export default () => {
 function Item({ name }: { name: ScreenName }) {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProps>();
-  return (
-    <Touchable onPress={() => navigation.push(name)}>
-      <View style={style.item}>
-        <Text style={[style.itemText, { color: colors.text }]}>{name}</Text>
-      </View>
-    </Touchable>
+  const content = (
+    <View style={style.item}>
+      <Text style={[style.itemText, { color: colors.text }]}>{name}</Text>
+    </View>
+  );
+  const onPress = () => navigation.push(name);
+  return Platform.OS === "android" ? (
+    <TouchableNativeFeedback onPress={onPress}>{content}</TouchableNativeFeedback>
+  ) : (
+    <TouchableOpacity onPress={onPress}>{content}</TouchableOpacity>
   );
 }
 

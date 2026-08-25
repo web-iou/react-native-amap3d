@@ -1,4 +1,6 @@
-import { requireNativeComponent } from "react-native";
+import * as React from "react";
+import type { StyleProp, ViewStyle } from "react-native";
+import NativePolygon from "./specs/AMapPolygonNativeComponent";
 import { LatLng } from "./types";
 
 export interface Polygon {
@@ -23,9 +25,13 @@ export interface Polygon {
   fillColor?: string;
 
   /**
-   * 层级
+   * 层级（写入 style.zIndex，由原生 View 样式通道下发）
    */
   zIndex?: number;
+
+  style?: StyleProp<ViewStyle>;
 }
 
-export default requireNativeComponent<Polygon>("AMapPolygon");
+export default function PolygonView({ zIndex, style, ...props }: Polygon) {
+  return <NativePolygon {...props} style={[style, zIndex != null ? { zIndex } : null]} />;
+}

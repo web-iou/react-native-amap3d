@@ -3,13 +3,19 @@ package qiuxiang.amap3d.map_view
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.facebook.react.viewmanagers.AMapPolylineManagerDelegate
+import com.facebook.react.viewmanagers.AMapPolylineManagerInterface
 import qiuxiang.amap3d.getEventTypeConstants
 import qiuxiang.amap3d.toLatLngList
 import qiuxiang.amap3d.toPx
 
 @Suppress("unused")
-internal class PolylineManager : SimpleViewManager<Polyline>() {
+internal class PolylineManager : SimpleViewManager<Polyline>(), AMapPolylineManagerInterface<Polyline> {
+  private val delegate = AMapPolylineManagerDelegate<Polyline, PolylineManager>(this)
+
+  override fun getDelegate(): ViewManagerDelegate<Polyline> = delegate
   override fun getName(): String {
     return "AMapPolyline"
   }
@@ -23,42 +29,46 @@ internal class PolylineManager : SimpleViewManager<Polyline>() {
   }
 
   @ReactProp(name = "points")
-  fun setPoints(polyline: Polyline, points: ReadableArray) {
-    polyline.points = points.toLatLngList()
+  override fun setPoints(polyline: Polyline, points: ReadableArray?) {
+    polyline.points = points?.toLatLngList() ?: emptyList()
   }
 
   @ReactProp(name = "colors")
-  fun setColors(polyline: Polyline, colors: ReadableArray) {
-    polyline.colors = (0 until colors.size()).map { colors.getInt(it) }
+  override fun setColors(polyline: Polyline, colors: ReadableArray?) {
+    polyline.colors = colors?.let { (0 until it.size()).map(it::getInt) } ?: emptyList()
   }
 
   @ReactProp(name = "color", customType = "Color")
-  fun setColor(polyline: Polyline, color: Int) {
-    polyline.color = color
+  override fun setColor(polyline: Polyline, color: Int?) {
+    polyline.color = color ?: 0
   }
 
   @ReactProp(name = "width")
-  fun setWidth(polyline: Polyline, width: Float) {
-    polyline.width = width.toPx().toFloat()
+  override fun setWidth(polyline: Polyline, width: Double) {
+    polyline.width = width.toFloat().toPx().toFloat()
   }
 
-  @ReactProp(name = "zIndex")
-  fun setIndex(polyline: Polyline, zIndex: Float) {
+  override fun setZIndex(polyline: Polyline, zIndex: Float) {
+    super.setZIndex(polyline, zIndex)
     polyline.zIndex = zIndex
   }
 
+  override fun setDotted(polyline: Polyline, dotted: Boolean) {
+    polyline.dashed = dotted
+  }
+
   @ReactProp(name = "geodesic")
-  fun setGeodesic(polyline: Polyline, geodesic: Boolean) {
+  override fun setGeodesic(polyline: Polyline, geodesic: Boolean) {
     polyline.geodesic = geodesic
   }
 
   @ReactProp(name = "dashed")
-  fun setDashed(polyline: Polyline, dashed: Boolean) {
+  override fun setDashed(polyline: Polyline, dashed: Boolean) {
     polyline.dashed = dashed
   }
 
   @ReactProp(name = "gradient")
-  fun setGradient(polyline: Polyline, gradient: Boolean) {
+  override fun setGradient(polyline: Polyline, gradient: Boolean) {
     polyline.gradient = gradient
   }
 }

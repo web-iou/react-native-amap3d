@@ -1,14 +1,16 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'com.facebook.react'
 
 def getExt(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
 buildscript {
-    ext.kotlin_version = '1.7.21'
+    ext.kotlin_version = '1.9.24'
 
     repositories {
+        google()
         mavenCentral()
     }
 
@@ -18,17 +20,37 @@ buildscript {
 }
 
 android {
-    compileSdkVersion getExt('compileSdkVersion', 33)
-    buildToolsVersion getExt('buildToolsVersion', '33.0.0')
+    namespace 'qiuxiang.amap3d'
+    compileSdkVersion getExt('compileSdkVersion', 35)
 
     defaultConfig {
-        minSdkVersion getExt('minSdkVersion', 21)
-        targetSdkVersion getExt('targetSdkVersion', 33)
+        minSdkVersion getExt('minSdkVersion', 24)
+        targetSdkVersion getExt('targetSdkVersion', 35)
+        buildConfigField 'boolean', 'IS_NEW_ARCHITECTURE_ENABLED', 'true'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
     }
 }
 
+react {
+    // package.json 由 lib/package.json 提供（Gradle 从 lib/android 向上只找一层）
+    libraryName = 'RNAmap3dSpec'
+    codegenJavaPackageName = 'com.facebook.fbreact.specs'
+    jsRootDir = file('../src/specs')
+}
+
 dependencies {
-    compileOnly 'com.facebook.react:react-native:+'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    compileOnly 'com.facebook.react:react-android'
     implementation 'com.amap.api:3dmap-location-search:latest.integration'
 }
