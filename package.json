@@ -16,6 +16,7 @@
     "lib/android/src",
     "lib/android/build.gradle",
     "lib/ios",
+    "lib/package.json",
     "react-native.config.js",
     "react-native-amap3d.podspec"
   ],
