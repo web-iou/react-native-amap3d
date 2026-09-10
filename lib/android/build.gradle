@@ -52,5 +52,5 @@ react {
 
 dependencies {
     compileOnly 'com.facebook.react:react-android'
-    implementation 'com.amap.api:3dmap-location-search:latest.integration'
+    implementation 'com.amap.api:3dmap:10.0.600'
 }
