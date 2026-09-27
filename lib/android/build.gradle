@@ -52,5 +52,5 @@ react {
 
 dependencies {
     compileOnly 'com.facebook.react:react-android'
-    implementation 'com.amap.api:3dmap:10.0.600'
+    implementation 'com.amap.api:3dmap:9.6.0'
 }
