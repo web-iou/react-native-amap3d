@@ -49,7 +49,7 @@ class Marker: UIView {
    * 于是索性把 subview 渲染成 image，原来用 subview 带来的 offset、点击问题也都不用处理了。
    * 正常情况下就把 subview 的 opacity 设成 0，需要渲染的时候才设成 1，渲染然后马上设回 0。
    */
-  func update() {
+  @objc func update() {
     if centerOffset == nil, view != nil {
       iconView?.layer.opacity = 1
       let renderer = UIGraphicsImageRenderer(bounds: iconView!.bounds)
