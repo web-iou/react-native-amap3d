@@ -22,5 +22,5 @@ Pod::Spec.new do |s|
   }
 
   install_modules_dependencies(s)
-  s.dependency 'AMap3DMap'
+  s.dependency 'AMap3DMap','10.0.600'
 end
